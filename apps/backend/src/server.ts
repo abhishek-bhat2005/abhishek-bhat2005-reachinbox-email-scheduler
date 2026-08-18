@@ -2,6 +2,7 @@ import { createApp } from "./app.js";
 import { setupAuth } from "./auth/setup-auth.js";
 import { loadConfig } from "./config/env.js";
 import { createPrismaClient } from "./db/prisma.js";
+import { createEmailRouter } from "./email/router.js";
 import { createRedisClient } from "./redis/client.js";
 
 const config = loadConfig();
@@ -15,7 +16,10 @@ const app = createApp(
       redis: async () => redis.ping(),
     },
   },
-  (expressApp) => setupAuth(expressApp, { config, database, redis }),
+  (expressApp) => {
+    setupAuth(expressApp, { config, database, redis });
+    expressApp.use("/api", createEmailRouter({ config, database }));
+  },
 );
 
 const server = app.listen(config.BACKEND_PORT, config.BACKEND_HOST, () => {

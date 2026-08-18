@@ -5,6 +5,9 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import multer from "multer";
+
+import { HttpError } from "./http/http-error.js";
 
 export interface HealthChecks {
   database: () => Promise<unknown>;
@@ -37,12 +40,37 @@ export function createApp(dependencies: AppDependencies, configure?: ConfigureAp
   });
 
   const errorHandler: ErrorRequestHandler = (
-    _error: unknown,
+    error: unknown,
     _request: Request,
     response: Response,
     next: NextFunction,
   ) => {
     void next;
+
+    if (error instanceof HttpError) {
+      response.status(error.status).json({
+        error: {
+          code: error.code,
+          message: error.message,
+          ...(error.details === undefined ? {} : { details: error.details }),
+        },
+      });
+      return;
+    }
+
+    if (error instanceof multer.MulterError) {
+      const fileTooLarge = error.code === "LIMIT_FILE_SIZE";
+      response.status(fileTooLarge ? 413 : 400).json({
+        error: {
+          code: fileTooLarge ? "UPLOAD_TOO_LARGE" : "INVALID_UPLOAD",
+          message: fileTooLarge
+            ? "The uploaded file exceeds the configured size limit"
+            : "The multipart upload is invalid",
+        },
+      });
+      return;
+    }
+
     response.status(500).json({
       error: {
         code: "INTERNAL_SERVER_ERROR",

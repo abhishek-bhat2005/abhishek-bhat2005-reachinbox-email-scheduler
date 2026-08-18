@@ -2,9 +2,7 @@ import { config as loadDotenv } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-const workspaceEnvironmentPath = fileURLToPath(
-  new URL("../../../../.env", import.meta.url),
-);
+const workspaceEnvironmentPath = fileURLToPath(new URL("../../../../.env", import.meta.url));
 
 loadDotenv({ path: workspaceEnvironmentPath, quiet: true });
 
