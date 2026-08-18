@@ -371,11 +371,4 @@ The automated load test proves 1,000-job behavior without flooding Ethereal. Reh
 - The missing Figma URL prevents objective pixel-perfect comparison.
 - Horizontal workers share PostgreSQL/Redis and the same queue/prefix configuration.
 
-## Submission checklist
 
-- Keep the GitHub repository private if required by the assignment.
-- Push the final verified commits.
-- Grant the exact reviewer accounts specified in the assignment access to the private repository.
-- Record and upload a demonstration no longer than five minutes.
-- Submit the repository and video links through the assignment form yourself.
-- Never include `.env`, Google credentials, SMTP credentials, cookies, tokens, or private logs in the repository or video.
