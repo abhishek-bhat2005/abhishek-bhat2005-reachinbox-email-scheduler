@@ -54,7 +54,10 @@ function authenticatedApp(user: Express.User, config = apiConfig) {
     },
     (app) => {
       app.use(authenticate);
-      app.use("/api", createEmailRouter({ config, database }));
+      app.use(
+        "/api",
+        createEmailRouter({ config, database, enqueueBatch: async () => Promise.resolve() }),
+      );
     },
   );
 }

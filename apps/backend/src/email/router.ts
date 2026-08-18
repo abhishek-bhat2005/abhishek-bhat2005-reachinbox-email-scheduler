@@ -36,6 +36,7 @@ type EmailApiConfig = Pick<
 export interface EmailRouterDependencies {
   config: EmailApiConfig;
   database: DatabaseClient;
+  enqueueBatch: (batchId: string) => Promise<void>;
 }
 
 const idempotencyKeySchema = z
@@ -148,7 +149,7 @@ function batchCreationResponse(
 }
 
 export function createEmailRouter(dependencies: EmailRouterDependencies): Router {
-  const { config, database } = dependencies;
+  const { config, database, enqueueBatch } = dependencies;
   const router = Router();
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -355,6 +356,15 @@ export function createEmailRouter(dependencies: EmailRouterDependencies): Router
         where: { userId_idempotencyKey: { userId: user.id, idempotencyKey } },
       });
       if (existingBatch !== null) {
+        try {
+          await enqueueBatch(existingBatch.id);
+        } catch {
+          throw new HttpError(
+            503,
+            "QUEUE_UNAVAILABLE",
+            "The batch is saved but could not be queued; retry with the same idempotency key",
+          );
+        }
         response.status(200).json(batchCreationResponse(existingBatch, true, []));
         return;
       }
@@ -396,6 +406,16 @@ export function createEmailRouter(dependencies: EmailRouterDependencies): Router
         sourceFilename: basename(request.file?.originalname ?? "leads.txt"),
         parsedLeads,
       });
+
+      try {
+        await enqueueBatch(result.batch.id);
+      } catch {
+        throw new HttpError(
+          503,
+          "QUEUE_UNAVAILABLE",
+          "The batch is saved but could not be queued; retry with the same idempotency key",
+        );
+      }
 
       response
         .status(result.replayed ? 200 : 201)

@@ -3,11 +3,13 @@ import { setupAuth } from "./auth/setup-auth.js";
 import { loadConfig } from "./config/env.js";
 import { createPrismaClient } from "./db/prisma.js";
 import { createEmailRouter } from "./email/router.js";
+import { createEmailQueue, enqueueEmailBatch } from "./queue/email-queue.js";
 import { createRedisClient } from "./redis/client.js";
 
 const config = loadConfig();
 const database = createPrismaClient(config.DATABASE_URL);
 const redis = createRedisClient(config.REDIS_URL, "api");
+const emailQueue = createEmailQueue(config);
 
 const app = createApp(
   {
@@ -18,7 +20,14 @@ const app = createApp(
   },
   (expressApp) => {
     setupAuth(expressApp, { config, database, redis });
-    expressApp.use("/api", createEmailRouter({ config, database }));
+    expressApp.use(
+      "/api",
+      createEmailRouter({
+        config,
+        database,
+        enqueueBatch: async (batchId) => enqueueEmailBatch(emailQueue, database, batchId, config),
+      }),
+    );
   },
 );
 
@@ -37,7 +46,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   console.info({ signal }, "Backend shutdown started");
 
   server.close(async () => {
-    await Promise.allSettled([database.$disconnect(), redis.quit()]);
+    await Promise.allSettled([emailQueue.close(), database.$disconnect(), redis.quit()]);
     process.exitCode = 0;
   });
 }
