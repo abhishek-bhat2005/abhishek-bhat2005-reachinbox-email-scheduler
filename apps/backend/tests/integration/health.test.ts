@@ -15,12 +15,19 @@ if (databaseUrl === undefined || redisUrl === undefined) {
 const database = createPrismaClient(databaseUrl);
 const redis = createRedisClient(redisUrl, "integration-health");
 
-const app = createApp({
-  healthChecks: {
-    database: async () => database.$queryRaw`SELECT 1`,
-    redis: async () => redis.ping(),
+const app = createApp(
+  {
+    healthChecks: {
+      database: async () => database.$queryRaw`SELECT 1`,
+      redis: async () => redis.ping(),
+    },
   },
-});
+  (configuredApp) => {
+    configuredApp.use("/api", (_request, response) => {
+      response.status(401).json({ error: { code: "AUTHENTICATION_REQUIRED" } });
+    });
+  },
+);
 
 beforeAll(async () => {
   await Promise.all([database.$connect(), redis.connect()]);
@@ -36,5 +43,12 @@ describe("dependency readiness", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: "ready" });
+  });
+
+  it("keeps liveness public when authenticated API middleware is mounted", async () => {
+    const response = await request(app).get("/api/health/live");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ status: "alive" });
   });
 });

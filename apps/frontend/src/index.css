@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  color: #172033;
+  color: #0f172a;
   background: #f6f7fb;
   font-family:
     Inter,
@@ -21,9 +21,50 @@ body {
   min-height: 100vh;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  outline-color: #6366f1;
+  outline-offset: 2px;
+}
+
 button,
 input,
 textarea,
 select {
   font: inherit;
+}
+
+.field {
+  @apply mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm font-normal text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10;
+}
+
+.field-error {
+  @apply block text-xs font-medium text-rose-600;
+}
+
+.metric-card {
+  @apply flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40;
+}
+
+.metric-icon {
+  @apply grid size-11 shrink-0 place-items-center rounded-xl;
+}
+
+.metric-icon svg {
+  @apply size-5;
+}
+
+.metric-label {
+  @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+}
+
+.metric-value {
+  @apply mt-1 text-2xl font-bold tracking-tight text-slate-900;
 }

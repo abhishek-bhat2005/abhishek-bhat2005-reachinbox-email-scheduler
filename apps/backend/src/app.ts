@@ -25,7 +25,6 @@ export function createApp(dependencies: AppDependencies, configure?: ConfigureAp
 
   app.disable("x-powered-by");
   app.use(express.json());
-  configure?.(app);
   app.get("/api/health/live", (_request, response) => {
     response.status(200).json({ status: "alive" });
   });
@@ -38,6 +37,8 @@ export function createApp(dependencies: AppDependencies, configure?: ConfigureAp
       response.status(503).json({ status: "not_ready" });
     }
   });
+
+  configure?.(app);
 
   const errorHandler: ErrorRequestHandler = (
     error: unknown,

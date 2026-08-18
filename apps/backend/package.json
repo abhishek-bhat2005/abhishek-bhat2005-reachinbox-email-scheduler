@@ -13,9 +13,9 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "verify:ethereal": "tsx src/cli/verify-ethereal.ts",
-    "db:generate": "prisma generate",
-    "db:validate": "prisma validate",
-    "db:migrate": "prisma migrate dev",
+    "db:generate": "node --env-file=../../.env node_modules/prisma/build/index.js generate",
+    "db:validate": "node --env-file=../../.env node_modules/prisma/build/index.js validate",
+    "db:migrate": "node --env-file=../../.env node_modules/prisma/build/index.js migrate dev",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

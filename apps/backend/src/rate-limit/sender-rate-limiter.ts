@@ -13,14 +13,14 @@ local limit = tonumber(ARGV[3])
 local minimumDelay = tonumber(ARGV[4])
 local reservationTtl = tonumber(ARGV[5])
 
-if nextAt > now then
-  return {0, nextAt, hasReservation and 1 or 0}
-end
-
 if not hasReservation and count >= limit then
   local retryAt = hourEnd
   if nextAt > retryAt then retryAt = nextAt end
   return {0, retryAt, 0}
+end
+
+if nextAt > now then
+  return {0, nextAt, hasReservation and 1 or 0}
 end
 
 if not hasReservation then
