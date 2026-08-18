@@ -112,6 +112,19 @@ Stop local application processes with `Ctrl+C`. Stop containers without deleting
 npm run infra:down
 ```
 
+## Production deployment
+
+Deploy the frontend to Vercel and run the stateful backend components in one Railway project:
+
+- Vercel root directory: `apps/frontend`; build command: `npm run build`; output directory: `dist`.
+- Railway API build command: `npm run build:backend`; pre-deploy command: `npm run db:migrate:deploy`; start command: `npm run start:backend`.
+- Railway worker build command: `npm run build:backend`; start command: `npm run start:worker`.
+- Railway also provides one PostgreSQL service and one Redis service. Both backend services reference the same private `DATABASE_URL` and `REDIS_URL`.
+
+Set `NODE_ENV=production`, `BACKEND_HOST=0.0.0.0`, and `TRUST_PROXY=true` for the Railway API and worker. Railway supplies `PORT` dynamically to the API. Give only the API service a public domain; the worker remains private. Set `FRONTEND_URL` to the exact Vercel origin, `GOOGLE_CALLBACK_URL` to the public API callback, and `VITE_API_BASE_URL` to the public API URL ending in `/api`.
+
+Keep OAuth, SMTP, and session secrets in platform environment variables. Never add them to Git, build arguments, screenshots, or deployment configuration files. Add the production frontend origin and callback URL to the Google OAuth client before testing sign-in.
+
 ## Environment configuration
 
 All ports, URLs, limits, timeouts, credentials and secrets are read from `.env` and validated at startup.

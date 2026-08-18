@@ -16,8 +16,10 @@
     "verify:load": "vitest run --config vitest.integration.config.ts tests/integration/load-proof.test.ts",
     "verify:recovery": "vitest run --config vitest.integration.config.ts tests/integration/email-queue.test.ts",
     "db:generate": "node --env-file=../../.env node_modules/prisma/build/index.js generate",
+    "db:generate:deploy": "node node_modules/prisma/build/index.js generate",
     "db:validate": "node --env-file=../../.env node_modules/prisma/build/index.js validate",
     "db:migrate": "node --env-file=../../.env node_modules/prisma/build/index.js migrate dev",
+    "db:migrate:deploy": "node node_modules/prisma/build/index.js migrate deploy",
     "db:seed": "node --env-file=../../.env --import tsx prisma/seed.ts"
   },
   "dependencies": {

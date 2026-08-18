@@ -105,5 +105,9 @@ export const environmentSchema = z
 export type AppConfig = z.infer<typeof environmentSchema>;
 
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
-  return environmentSchema.parse(environment);
+  return environmentSchema.parse({
+    ...environment,
+    // Managed hosts such as Railway allocate the public HTTP port at runtime.
+    BACKEND_PORT: environment.PORT ?? environment.BACKEND_PORT,
+  });
 }

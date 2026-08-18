@@ -4,6 +4,7 @@ export function createRedisClient(redisUrl: string, connectionName: string): Red
   return new Redis(redisUrl, {
     connectionName,
     enableReadyCheck: true,
+    family: 0,
     lazyConnect: true,
     maxRetriesPerRequest: null,
   });

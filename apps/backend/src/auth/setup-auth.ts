@@ -41,7 +41,7 @@ export function setupAuth(app: Express, dependencies: AuthDependencies): void {
       cookie: {
         httpOnly: true,
         maxAge: config.SESSION_TTL_MS,
-        sameSite: "lax",
+        sameSite: config.NODE_ENV === "production" ? "none" : "lax",
         secure: config.NODE_ENV === "production",
       },
       name: config.SESSION_COOKIE_NAME,

@@ -26,6 +26,7 @@ export function bullMqConnection(config: Pick<AppConfig, "REDIS_URL">, name: str
   return {
     url: config.REDIS_URL,
     connectionName: name,
+    family: 0,
     maxRetriesPerRequest: null,
   };
 }

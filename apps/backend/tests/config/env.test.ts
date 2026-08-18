@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { environmentSchema } from "../../src/config/env.js";
+import { environmentSchema, loadConfig } from "../../src/config/env.js";
 
 const validEnvironment = {
   NODE_ENV: "test",
@@ -65,6 +65,12 @@ describe("environment configuration", () => {
     Reflect.deleteProperty(missingSecret, "SESSION_SECRET");
 
     expect(() => environmentSchema.parse(missingSecret)).toThrow();
+  });
+
+  it("uses a managed platform port when one is provided", () => {
+    const result = loadConfig({ ...validEnvironment, PORT: "9200" });
+
+    expect(result.BACKEND_PORT).toBe(9200);
   });
 
   it("rejects inconsistent operational bounds", () => {
