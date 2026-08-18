@@ -1,0 +1,60 @@
+name: reachinbox-email-scheduler
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:?POSTGRES_IMAGE is required}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_CONTAINER_PORT: ${POSTGRES_CONTAINER_PORT:?POSTGRES_CONTAINER_PORT is required}
+      PGPORT: ${POSTGRES_CONTAINER_PORT:?POSTGRES_CONTAINER_PORT is required}
+    ports:
+      - "${POSTGRES_PORT:?POSTGRES_PORT is required}:${POSTGRES_CONTAINER_PORT:?POSTGRES_CONTAINER_PORT is required}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -p $${POSTGRES_CONTAINER_PORT}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: ${REDIS_IMAGE:?REDIS_IMAGE is required}
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      REDIS_CONTAINER_PORT: ${REDIS_CONTAINER_PORT:?REDIS_CONTAINER_PORT is required}
+    command:
+      - sh
+      - -c
+      - >-
+        exec redis-server
+        --appendonly yes
+        --appendfsync everysec
+        --port "$${REDIS_CONTAINER_PORT}"
+        --requirepass "$${REDIS_PASSWORD}"
+    ports:
+      - "${REDIS_PORT:?REDIS_PORT is required}:${REDIS_CONTAINER_PORT:?REDIS_CONTAINER_PORT is required}"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -p $${REDIS_CONTAINER_PORT} -a $${REDIS_PASSWORD} --no-auth-warning ping | grep PONG",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  postgres_data:
+  redis_data:

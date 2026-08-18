@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmailBatchStatus {
+  CREATING
+  SCHEDULED
+  PARTIALLY_FAILED
+  COMPLETED
+}
+
+enum ScheduledEmailStatus {
+  SCHEDULED
+  RATE_LIMITED
+  PROCESSING
+  RETRYABLE
+  SENT
+  FAILED
+  DELIVERY_UNKNOWN
+  CANCELLED
+}
+
+enum SendAttemptOutcome {
+  CLAIMED
+  RATE_LIMITED
+  SMTP_ACCEPTED
+  DEFINITE_FAILURE
+  TRANSIENT_FAILURE
+  DELIVERY_UNKNOWN
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  googleSubject String   @unique @map("google_subject") @db.VarChar(255)
+  email         String   @unique @db.VarChar(320)
+  name          String   @db.VarChar(200)
+  avatarUrl     String?  @map("avatar_url") @db.Text
+  lastLoginAt   DateTime @map("last_login_at") @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  senders EmailSender[]
+  batches EmailBatch[]
+
+  @@map("users")
+}
+
+model EmailSender {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  displayName      String   @map("display_name") @db.VarChar(200)
+  email            String   @db.VarChar(320)
+  normalizedEmail  String   @map("normalized_email") @db.VarChar(320)
+  isDefault        Boolean  @default(false) @map("is_default")
+  isActive         Boolean  @default(true) @map("is_active")
+  hourlyLimit      Int      @map("hourly_limit")
+  minimumDelayMs   Int      @map("minimum_delay_ms")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batches         EmailBatch[]
+  scheduledEmails ScheduledEmail[]
+
+  @@unique([userId, normalizedEmail])
+  @@index([userId, isActive])
+  @@map("email_senders")
+}
+
+model EmailBatch {
+  id                      String           @id @default(uuid()) @db.Uuid
+  userId                  String           @map("user_id") @db.Uuid
+  senderId                String           @map("sender_id") @db.Uuid
+  idempotencyKey          String           @map("idempotency_key") @db.VarChar(255)
+  subject                 String           @db.VarChar(998)
+  bodyText                String           @map("body_text") @db.Text
+  startAt                 DateTime         @map("start_at") @db.Timestamptz(3)
+  requestedHourlyLimit    Int              @map("requested_hourly_limit")
+  requestedMinimumDelayMs Int              @map("requested_minimum_delay_ms")
+  sourceFilename          String           @map("source_filename") @db.VarChar(255)
+  totalRows               Int              @map("total_rows")
+  validRecipientCount     Int              @map("valid_recipient_count")
+  invalidRecipientCount   Int              @map("invalid_recipient_count")
+  duplicateRecipientCount Int              @map("duplicate_recipient_count")
+  status                  EmailBatchStatus @default(CREATING)
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender          EmailSender      @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  scheduledEmails ScheduledEmail[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([senderId, status])
+  @@map("email_batches")
+}
+
+model ScheduledEmail {
+  id                       String               @id @default(uuid()) @db.Uuid
+  batchId                  String               @map("batch_id") @db.Uuid
+  senderId                 String               @map("sender_id") @db.Uuid
+  recipientEmail           String               @map("recipient_email") @db.VarChar(320)
+  normalizedRecipientEmail String               @map("normalized_recipient_email") @db.VarChar(320)
+  sequenceNumber           Int                  @map("sequence_number")
+  scheduledAt              DateTime             @map("scheduled_at") @db.Timestamptz(3)
+  nextAttemptAt            DateTime             @map("next_attempt_at") @db.Timestamptz(3)
+  sentAt                   DateTime?            @map("sent_at") @db.Timestamptz(3)
+  status                   ScheduledEmailStatus @default(SCHEDULED)
+  bullJobId                String               @unique @map("bull_job_id") @db.VarChar(255)
+  idempotencyKey           String               @unique @map("idempotency_key") @db.VarChar(255)
+  attemptCount             Int                  @default(0) @map("attempt_count")
+  processingToken          String?              @unique @map("processing_token") @db.Uuid
+  processingStartedAt      DateTime?            @map("processing_started_at") @db.Timestamptz(3)
+  smtpMessageId            String?              @map("smtp_message_id") @db.VarChar(998)
+  etherealPreviewUrl       String?              @map("ethereal_preview_url") @db.Text
+  lastErrorCode            String?              @map("last_error_code") @db.VarChar(100)
+  lastErrorMessage         String?              @map("last_error_message") @db.Text
+  rateLimitedUntil         DateTime?            @map("rate_limited_until") @db.Timestamptz(3)
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  batch    EmailBatch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sender   EmailSender   @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  attempts SendAttempt[]
+
+  @@unique([batchId, normalizedRecipientEmail])
+  @@index([batchId, sequenceNumber])
+  @@index([senderId, status, scheduledAt])
+  @@index([status, nextAttemptAt])
+  @@index([sentAt])
+  @@map("scheduled_emails")
+}
+
+model SendAttempt {
+  id               String             @id @default(uuid()) @db.Uuid
+  scheduledEmailId String             @map("scheduled_email_id") @db.Uuid
+  attemptNumber    Int                @map("attempt_number")
+  attemptToken     String             @unique @map("attempt_token") @db.Uuid
+  startedAt        DateTime           @map("started_at") @db.Timestamptz(3)
+  finishedAt       DateTime?          @map("finished_at") @db.Timestamptz(3)
+  outcome          SendAttemptOutcome
+  responseMetadata Json?              @map("response_metadata")
+  errorCode        String?            @map("error_code") @db.VarChar(100)
+  errorMessage     String?            @map("error_message") @db.Text
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  scheduledEmail ScheduledEmail @relation(fields: [scheduledEmailId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduledEmailId, attemptNumber])
+  @@index([scheduledEmailId, startedAt])
+  @@index([outcome, startedAt])
+  @@map("send_attempts")
+}
