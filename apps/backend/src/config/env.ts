@@ -8,6 +8,7 @@ loadDotenv({ path: workspaceEnvironmentPath, quiet: true });
 
 const positiveInteger = z.coerce.number().int().positive();
 const nonNegativeInteger = z.coerce.number().int().nonnegative();
+const oneHourMilliseconds = 60 * 60 * 1_000;
 const booleanString = z.enum(["true", "false"]).transform((value) => value === "true");
 
 export const environmentSchema = z
@@ -89,6 +90,14 @@ export const environmentSchema = z
         code: "custom",
         path: ["API_PAGE_SIZE"],
         message: "must be less than or equal to API_MAX_PAGE_SIZE",
+      });
+    }
+
+    if (config.RATE_LIMIT_RESERVATION_TTL_MS < oneHourMilliseconds) {
+      context.addIssue({
+        code: "custom",
+        path: ["RATE_LIMIT_RESERVATION_TTL_MS"],
+        message: "must retain reservations for at least one hour",
       });
     }
   });
