@@ -30,6 +30,17 @@ npm run build
 
 `GET /api/health/live` reports process liveness. `GET /api/health/ready` reports readiness only when both PostgreSQL and Redis respond.
 
+## Google OAuth configuration
+
+Create an OAuth 2.0 Web Application in Google Cloud. Register the exact frontend URL from `FRONTEND_URL` as an authorized JavaScript origin and the exact `GOOGLE_CALLBACK_URL` as an authorized redirect URI. Add the client ID and secret only to your untracked local `.env`.
+
+The backend requests only `openid`, `email`, and `profile`. It stores the stable Google subject and display profile, keeps sessions in Redis, and never sends OAuth tokens to the frontend. Authentication routes are:
+
+- `GET /api/auth/google`
+- `GET /api/auth/google/callback`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+
 Never commit `.env` or credentials. All exposed ports, credentials, limits, and delays are provided through environment configuration; the Compose file intentionally has no credential or host-port defaults.
 
 Complete infrastructure, OAuth, Ethereal, architecture, testing, and demonstration instructions will be added as each verified implementation phase lands.

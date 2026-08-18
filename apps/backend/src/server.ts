@@ -1,18 +1,22 @@
 import { createApp } from "./app.js";
+import { setupAuth } from "./auth/setup-auth.js";
 import { loadConfig } from "./config/env.js";
 import { createPrismaClient } from "./db/prisma.js";
 import { createRedisClient } from "./redis/client.js";
 
 const config = loadConfig();
 const database = createPrismaClient(config.DATABASE_URL);
-const redis = createRedisClient(config.REDIS_URL, "api-health");
+const redis = createRedisClient(config.REDIS_URL, "api");
 
-const app = createApp({
-  healthChecks: {
-    database: async () => database.$queryRaw`SELECT 1`,
-    redis: async () => redis.ping(),
+const app = createApp(
+  {
+    healthChecks: {
+      database: async () => database.$queryRaw`SELECT 1`,
+      redis: async () => redis.ping(),
+    },
   },
-});
+  (expressApp) => setupAuth(expressApp, { config, database, redis }),
+);
 
 const server = app.listen(config.BACKEND_PORT, config.BACKEND_HOST, () => {
   console.info("Backend is listening on the configured host and port");

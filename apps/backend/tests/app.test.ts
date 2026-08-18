@@ -40,4 +40,22 @@ describe("health endpoints", () => {
     expect(response.status).toBe(503);
     expect(response.body).toEqual({ status: "not_ready" });
   });
+
+  it("returns a generic error envelope without leaking internal errors", async () => {
+    const app = createApp({ healthChecks: passingHealthChecks }, (configuredApp) => {
+      configuredApp.get("/test-error", () => {
+        throw new Error("sensitive internal detail");
+      });
+    });
+    const response = await request(app).get("/test-error");
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "An unexpected error occurred",
+      },
+    });
+    expect(response.text).not.toContain("sensitive internal detail");
+  });
 });
