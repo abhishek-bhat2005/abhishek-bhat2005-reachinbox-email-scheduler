@@ -8,9 +8,11 @@ import { SenderRateLimiter } from "./rate-limit/sender-rate-limiter.js";
 import { createRedisClient } from "./redis/client.js";
 import { createEmailProcessor } from "./worker/email-processor.js";
 import { seedSenderRateLimits } from "./worker/rate-seed.js";
+import { createLogger, errorName } from "./observability/logger.js";
 
 async function startWorker(): Promise<void> {
   const config = loadConfig();
+  const logger = createLogger(config, "email-worker");
   const database = createPrismaClient(config.DATABASE_URL);
   const redis = createRedisClient(config.REDIS_URL, "worker-rate-limit");
   const queue = createEmailQueue(config);
@@ -21,31 +23,37 @@ async function startWorker(): Promise<void> {
     const rateLimiter = new SenderRateLimiter(redis, config);
     const seededSenders = await seedSenderRateLimits(database, rateLimiter);
     const result = await reconcileEmailQueue(queue, database, config);
-    console.info(
-      {
-        examined: result.examined,
-        deliveryUnknown: result.deliveryUnknown,
-        seededSenders,
-      },
-      "Email worker startup completed",
-    );
+    logger.info("Email worker startup completed", {
+      examined: result.examined,
+      deliveryUnknown: result.deliveryUnknown,
+      seededSenders,
+      concurrency: config.WORKER_CONCURRENCY,
+    });
 
     const worker = createEmailWorker(
       config,
       createEmailProcessor(database, rateLimiter, mailer, config),
     );
-    worker.on("error", () => {
-      console.error("The email worker reported an internal error");
+    worker.on("error", (error) => {
+      logger.error("Email worker internal error", { errorName: errorName(error) });
+    });
+    worker.on("failed", (job, error) => {
+      logger.warn("Email job failed", {
+        jobId: job?.id,
+        attemptsMade: job?.attemptsMade,
+        errorName: errorName(error),
+      });
     });
 
     let shutdownStarted = false;
     const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
       if (shutdownStarted) return;
       shutdownStarted = true;
-      console.info({ signal }, "Email worker shutdown started");
+      logger.info("Email worker shutdown started", { signal });
       await worker.close();
       mailer.close();
       await Promise.allSettled([queue.close(), database.$disconnect(), redis.quit()]);
+      logger.info("Email worker shutdown completed");
     };
 
     process.once("SIGINT", () => void shutdown("SIGINT"));
@@ -57,7 +65,8 @@ async function startWorker(): Promise<void> {
   }
 }
 
-void startWorker().catch(() => {
-  console.error("Email worker startup failed");
+void startWorker().catch((error: unknown) => {
+  const fallbackLogger = createLogger({ LOG_LEVEL: "error" }, "email-worker");
+  fallbackLogger.fatal("Email worker startup failed", { errorName: errorName(error) });
   process.exitCode = 1;
 });

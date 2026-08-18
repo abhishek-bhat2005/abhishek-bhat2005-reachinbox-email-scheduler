@@ -13,10 +13,12 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "verify:ethereal": "tsx src/cli/verify-ethereal.ts",
+    "verify:load": "vitest run --config vitest.integration.config.ts tests/integration/load-proof.test.ts",
+    "verify:recovery": "vitest run --config vitest.integration.config.ts tests/integration/email-queue.test.ts",
     "db:generate": "node --env-file=../../.env node_modules/prisma/build/index.js generate",
     "db:validate": "node --env-file=../../.env node_modules/prisma/build/index.js validate",
     "db:migrate": "node --env-file=../../.env node_modules/prisma/build/index.js migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "node --env-file=../../.env --import tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",

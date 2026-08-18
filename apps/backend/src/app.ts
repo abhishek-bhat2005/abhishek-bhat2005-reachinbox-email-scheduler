@@ -16,6 +16,7 @@ export interface HealthChecks {
 
 export interface AppDependencies {
   healthChecks: HealthChecks;
+  onInternalError?: (error: unknown) => void;
 }
 
 export type ConfigureApp = (app: Express) => void;
@@ -72,6 +73,7 @@ export function createApp(dependencies: AppDependencies, configure?: ConfigureAp
       return;
     }
 
+    dependencies.onInternalError?.(error);
     response.status(500).json({
       error: {
         code: "INTERNAL_SERVER_ERROR",

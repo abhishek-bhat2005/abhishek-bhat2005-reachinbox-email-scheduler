@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 import { z } from "zod";
 
 import { createPrismaClient } from "../src/db/prisma.js";

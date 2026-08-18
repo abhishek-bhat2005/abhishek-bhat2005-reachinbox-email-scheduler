@@ -28,7 +28,8 @@ function previewLeadFile(file: File, maxLeads: number): Promise<LeadPreview> {
     let values: string[];
     if (file.name.toLowerCase().endsWith(".csv")) {
       const result = Papa.parse<string[]>(text, { skipEmptyLines: true });
-      if (result.errors.length > 0) throw new Error("The CSV preview could not be parsed");
+      const fatalErrors = result.errors.filter((error) => error.code !== "UndetectableDelimiter");
+      if (fatalErrors.length > 0) throw new Error("The CSV preview could not be parsed");
       const rows = result.data;
       const first = rows[0] ?? [];
       const emailColumn = first.findIndex((value) => value.trim().toLowerCase() === "email");

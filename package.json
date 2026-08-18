@@ -23,6 +23,8 @@
     "test:integration": "npm run test:integration --workspaces --if-present",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "verify:ethereal": "npm run verify:ethereal --workspace @reachinbox/backend",
+    "verify:load": "npm run verify:load --workspace @reachinbox/backend",
+    "verify:recovery": "npm run verify:recovery --workspace @reachinbox/backend",
     "build": "npm run build --workspaces --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

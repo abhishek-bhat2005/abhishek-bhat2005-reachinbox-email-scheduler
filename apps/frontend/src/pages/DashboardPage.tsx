@@ -16,6 +16,7 @@ import { api, ApiError, dashboardRefreshMs } from "../api/client";
 import type { ScheduleBatchResponse, ScheduledEmail, SentEmail, User } from "../api/types";
 import { ComposeModal } from "../components/ComposeModal";
 import { EmailTable } from "../components/EmailTable";
+import { UserAvatar } from "../components/UserAvatar";
 
 interface DashboardPageProps {
   user: User;
@@ -111,13 +112,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
               className="flex items-center gap-3 rounded-xl p-2 text-left hover:bg-slate-50"
               type="button"
             >
-              {user.avatarUrl === null ? (
-                <span className="grid size-9 place-items-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-                  {user.name.slice(0, 1).toUpperCase()}
-                </span>
-              ) : (
-                <img alt="" className="size-9 rounded-full object-cover" src={user.avatarUrl} />
-              )}
+              <UserAvatar avatarUrl={user.avatarUrl} name={user.name} />
               <span className="hidden sm:block">
                 <span className="block text-sm font-semibold text-slate-800">{user.name}</span>
                 <span className="block max-w-48 truncate text-xs text-slate-400">{user.email}</span>
