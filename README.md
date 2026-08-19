@@ -123,6 +123,8 @@ Deploy the frontend to Vercel and run the stateful backend components in one Rai
 
 Set `NODE_ENV=production`, `BACKEND_HOST=0.0.0.0`, and `TRUST_PROXY=true` for the Railway API and worker. Railway supplies `PORT` dynamically to the API. Give only the API service a public domain; the worker remains private. Set `FRONTEND_URL` to the exact Vercel origin, `GOOGLE_CALLBACK_URL` to the public API callback, and `VITE_API_BASE_URL` to the public API URL ending in `/api`.
 
+The Vite frontend includes `apps/frontend/vercel.json` so Vercel rewrites client-side routes to `index.html`, including OAuth return routes.
+
 Keep OAuth, SMTP, and session secrets in platform environment variables. Never add them to Git, build arguments, screenshots, or deployment configuration files. Add the production frontend origin and callback URL to the Google OAuth client before testing sign-in.
 
 ## Environment configuration
@@ -383,5 +385,4 @@ The automated load test proves 1,000-job behavior without flooding Ethereal. Reh
 - Ambiguous SMTP outcomes are not automatically retried.
 - The missing Figma URL prevents objective pixel-perfect comparison.
 - Horizontal workers share PostgreSQL/Redis and the same queue/prefix configuration.
-
 
